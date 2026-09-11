@@ -6,6 +6,8 @@ September 11, 2026. QA implementation; verify hosted readiness and delivery befo
 
 Escalate only when the caller requests human help or the agent cannot resolve an issue. Offer a phone connection/contact route or a message to support. Never email after every conversation. For email, collect a reply email and short issue summary, read both back, and obtain explicit approval before invoking `send_support_message` with `confirmed: true`.
 
+Both agents keep tool names, parameters, provider names and sending mechanics out of spoken replies. After approval, use “I’ll send a message to the support team.” Only an accepted result permits confirming submission. Email uses a natural greeting, the exact approved message, a reply sentence and a short sign-off; it does not lead with channel labels, reference codes or protocol details.
+
 The dashboard cannot transfer its browser voice session. It may provide (605) 599-8008, whose phone agent can offer an approved transfer. Preserve the phone agent's existing transfer destination, permission requirement, and pricing/contract restrictions.
 
 ## Addresses and delivery

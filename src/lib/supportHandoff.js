@@ -71,8 +71,8 @@ function createSupportHandoff(options = {}) {
           personalizations: [{ to: [{ email: SUPPORT_TO }] }],
           from: { email: SUPPORT_FROM, name: 'alphaSource Support Agent' },
           reply_to: { email: input.contact_email },
-          subject: `[alphaScreen support] ${channel === 'phone' ? 'Phone' : 'Dashboard'} escalation ${reference}`,
-          content: [{ type: 'text/plain', value: `The caller approved sending this support request.\n\nChannel: ${channel}\nReply email (caller-provided, not identity-verified): ${input.contact_email}\nReference: ${reference}\n\nCaller-approved summary:\n${input.summary}\n\nThis is a support request, not authorization to disclose records or change an account. Verify identity and account authority before account-specific follow-up. No transcript or recording is attached.` }],
+          subject: channel === 'phone' ? 'Support request from a phone conversation' : 'Support request from Talk with Support',
+          content: [{ type: 'text/plain', value: `Hi team,\n\n${channel === 'phone' ? 'Someone called alphaSource' : 'Someone used Talk with Support in the dashboard'} and asked me to pass along this message:\n\n${input.summary}\n\nThey approved sharing this with the team. You can reply directly to this email to reach them at ${input.contact_email}.\n\nThanks,\nalphaSource Support\n\nPlease confirm their identity before discussing private account details or making account changes.` }],
           tracking_settings: { click_tracking: { enable: false, enable_text: false }, open_tracking: { enable: false } },
         }),
       });
