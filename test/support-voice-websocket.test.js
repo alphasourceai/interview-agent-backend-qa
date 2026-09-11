@@ -187,7 +187,7 @@ test('support handoff executes once and resumes voice only after the response fi
     await waitFor(() => h.messages.some(message => message.type === 'ready'));
     const upstream = FakeUpstream.instances[0];
     upstream.emitProvider({ type: 'response.created' });
-    const event = { type: 'response.function_call_arguments.done', name: 'send_support_message', call_id: 'support-call-1', arguments: JSON.stringify({ summary: 'Need setup help', contact_email: 'client@example.com', confirmed: true }) };
+    const event = { type: 'response.function_call_arguments.done', name: 'send_support_message', call_id: 'support-call-1', arguments: JSON.stringify({ summary: 'Need setup help', contact_name: 'Alex Rivera', contact_email: 'client@example.com', confirmed: true }) };
     upstream.emitProvider(event);
     assert.equal(sends.length, 1);
     assert.equal(sends[0].context.channel, 'dashboard');

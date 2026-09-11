@@ -5,15 +5,16 @@ const SUPPORT_FROM = 'support-agent@alphasourceai.com';
 const SUPPORT_TOOL = Object.freeze({
   type: 'function',
   name: 'send_support_message',
-  description: 'Submit one brief issue summary to the alphaSource support team only after the caller explicitly chooses email escalation, confirms their reply email, and approves the summary. Never use for routine conversations or include candidate records, credentials, or transcripts.',
+  description: 'Submit one brief issue summary to the alphaSource support team only after the caller explicitly chooses email escalation, confirms their name and reply email, and approves the summary. Ask for spelling when unclear; never guess. Never use for routine conversations or include candidate records, credentials, or transcripts.',
   parameters: {
     type: 'object',
     properties: {
       summary: { type: 'string', description: 'Caller-approved issue summary, without sensitive records or credentials; maximum 1000 characters.' },
-      contact_email: { type: 'string', description: 'Reply email explicitly provided and confirmed by the caller.' },
-      confirmed: { type: 'boolean', description: 'True only after the caller explicitly approves sending this summary and reply email to support.' },
+      contact_name: { type: 'string', description: 'Caller-provided name, spelling explicitly confirmed; maximum 120 characters. Ask for spelling when unclear.' },
+      contact_email: { type: 'string', description: 'Reply email explicitly provided and confirmed by the caller. Ask for spelling when unclear; do not guess.' },
+      confirmed: { type: 'boolean', description: 'True only after the caller explicitly approves sending this summary, name and reply email to support.' },
     },
-    required: ['summary', 'contact_email', 'confirmed'],
+    required: ['summary', 'contact_name', 'contact_email', 'confirmed'],
     additionalProperties: false,
   },
 });
@@ -24,15 +25,17 @@ function hash(value) {
 
 function validateHandoff(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
-      Object.keys(value).sort().join(',') !== 'confirmed,contact_email,summary' || value.confirmed !== true) return null;
-  if (typeof value.summary !== 'string' || typeof value.contact_email !== 'string') return null;
+      Object.keys(value).sort().join(',') !== 'confirmed,contact_email,contact_name,summary' || value.confirmed !== true) return null;
+  if (typeof value.summary !== 'string' || typeof value.contact_email !== 'string' || typeof value.contact_name !== 'string') return null;
+  const name = value.contact_name.trim();
+  if (!name || name.length > 120 || /[\u0000-\u001f\u007f]/.test(name) || !/\p{L}/u.test(name)) return null;
   const summary = value.summary.trim();
   const email = value.contact_email.trim().toLowerCase();
   if (summary.length < 5 || summary.length > 1000 || /[\u0000-\u001f\u007f]/.test(summary)) return null;
   if (email.length > 254 || !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,63}$/i.test(email)) return null;
   // Block obvious credentials/links before they can enter team email. Do not log rejected input.
-  if (/https?:\/\/|bearer\s|\b(?:sk-|SG\.)[a-z0-9_-]{12,}|\b\d{6}\b|\b(?:\d[ -]?){13,19}\b/i.test(summary)) return null;
-  return { summary, contact_email: email, confirmed: true };
+  if (/https?:\/\/|bearer\s|\b(?:sk-|SG\.)[a-z0-9_-]{12,}|\b\d{6}\b|\b(?:\d[ -]?){13,19}\b/i.test(`${name} ${summary}`)) return null;
+  return { contact_name: name, summary, contact_email: email, confirmed: true };
 }
 
 function handoffEnabled(env = process.env) {
@@ -70,9 +73,9 @@ function createSupportHandoff(options = {}) {
         body: JSON.stringify({
           personalizations: [{ to: [{ email: SUPPORT_TO }] }],
           from: { email: SUPPORT_FROM, name: 'alphaSource Support Agent' },
-          reply_to: { email: input.contact_email },
+          reply_to: { email: input.contact_email, name: input.contact_name },
           subject: channel === 'phone' ? 'Support request from a phone conversation' : 'Support request from Talk with Support',
-          content: [{ type: 'text/plain', value: `Hi team,\n\n${channel === 'phone' ? 'Someone called alphaSource' : 'Someone used Talk with Support in the dashboard'} and asked me to pass along this message:\n\n${input.summary}\n\nThey approved sharing this with the team. You can reply directly to this email to reach them at ${input.contact_email}.\n\nThanks,\nalphaSource Support\n\nPlease confirm their identity before discussing private account details or making account changes.` }],
+          content: [{ type: 'text/plain', value: `Hi team,\n\n${input.contact_name} ${channel === 'phone' ? 'called alphaSource' : 'used Talk with Support in the dashboard'} and asked me to pass along this message:\n\n${input.summary}\n\nThey approved sharing this with the team. You can reply directly to this email to reach them at ${input.contact_email}.\n\nThanks,\nalphaSource Support\n\nPlease confirm their identity before discussing private account details or making account changes.` }],
           tracking_settings: { click_tracking: { enable: false, enable_text: false }, open_tracking: { enable: false } },
         }),
       });
